@@ -324,7 +324,7 @@ const Trade: NextPage = () => {
                               }}
                               className={pixel4Font.className}
                             >
-                              {item.progress}%
+                              {item.progress.toFixed(2)}%
                             </Text>
                           </Tooltip>
                         </Box>

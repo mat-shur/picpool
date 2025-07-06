@@ -12,7 +12,13 @@ import {
 import localFont from "next/font/local";
 import NextImage from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-
+import {
+  Dialog,
+  Portal,
+  Button,
+  CloseButton,
+  useDisclosure,
+} from "@chakra-ui/react";
 import pepeMon from "../images/pepe_mon.png";
 
 const monoDisplay = localFont({ src: "../fonts/vanquish.otf" });
@@ -34,14 +40,91 @@ const GridDots = (props: BoxProps) => (
   />
 );
 
+const InfoDialog = () => {
+  const { open, onOpen, onClose } = useDisclosure();
+
+  return (
+    <>
+      
+
+      <Dialog.Root size="xl">
+      <Dialog.Trigger asChild>
+        <Button 
+        position="fixed"
+        bottom="24px"
+        right="24px"
+        bg="#c11c84"
+        color="white"
+        className={pixelFont.className}
+        _hover={{ transform: "scale(1.05)" }}
+        onClick={onOpen}
+        textAlign="center"
+        zIndex={50}
+      >
+        <Text mt={-2}>🤔 What is this?</Text>
+      </Button></Dialog.Trigger>
+        <Portal>
+          <Dialog.Backdrop bg="rgba(0,0,0,0.85)" />
+          <Dialog.Positioner>
+            <Dialog.Content
+              bg="black"
+              border="2px solid #c11c84"
+              color="white"
+              p={6}
+              className={pixel3Font.className}
+              position="relative"
+            >
+              <Dialog.Header>
+                <Dialog.Title
+                  className={pixelFont.className}
+                  style={{ color: "white", fontSize: "1.1rem" }}
+                  pb={5}
+                >
+                  🚀 Welcome to picpool — the PumpFun-like NFT protocol!
+                </Dialog.Title>
+              </Dialog.Header>
+
+              <Dialog.Body>
+                <VStack align="start" gap={3} fontSize="xs">
+                  <Text>🎯 Create a new NFT listing with a start and end price.</Text>
+                  <Text>🧮 Set total supply and (optionally) premint up to <b>10 NFTs</b> for yourself.</Text>
+                  <Text>📈 Price automatically goes up with each buy, and drops with burns.</Text>
+                  <Text>💥 No orders. No offers. Just pure market action via the liquidity pool.</Text>
+                  <Text>
+                    🛡️ Revenue is <u>locked</u> until all NFTs are minted. The dev can’t touch funds unless the
+                    collection is fully minted. No early rug pulls here. 😎
+                  </Text>
+                  <Text>
+                    🧠 It’s like <b>Pump.Fun</b> — but for NFTs, and with a built-in anti-rug mechanism.
+                  </Text>
+                </VStack>
+              </Dialog.Body>
+
+              <Dialog.Footer mt={4}>
+              <Dialog.ActionTrigger asChild>
+                      <Button variant="outline">Close</Button>
+                    </Dialog.ActionTrigger>
+              </Dialog.Footer>
+
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+    </>
+  );
+};
+
+
+
+
 const Home: NextPage = () => {
   return (
     <>
       <Head>
         <title>picpool</title>
-        <meta name="description" content="Front-end developer portfolio of Elias." />
+        <meta name="description" content="picpool - the PumpFun-like NFT protocol" />
       </Head>
-
+      <InfoDialog />
       <Box
         position="relative"
         bg="black"
