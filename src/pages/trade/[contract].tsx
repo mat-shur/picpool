@@ -58,6 +58,12 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 5, baseDelay = 300):
     try {
       return await fn()
     } catch (err) {
+      if (err instanceof Error && err.message.includes("InsufficientPayment")) {
+        throw err
+      }
+      if (err instanceof Error && err.message.includes("user rejected")) {
+        throw err
+      }
       if (i === retries - 1) throw err
       console.warn(`RPC error: ${err}. Retry ${i + 1}/${retries}`)
       await sleep(baseDelay * 2 ** i)
@@ -123,6 +129,8 @@ const TradeListing: NextPage = () => {
   const [slippagePct, setSlippagePct] = React.useState<number>(10)
   const [burnTokenId, setBurnTokenId] = React.useState<string>("")
 
+  const [sellPrice, setSellPrice] = useState<number | null>(null)
+
   const [isSlippageOpen, setIsSlippageOpen] = useState(false)
   const slipageToggleOpen = () => setIsSlippageOpen((v) => !v)
 
@@ -161,12 +169,13 @@ const TradeListing: NextPage = () => {
 
   const fetchMeta = React.useCallback(async () => {
     if (!collection) return
-    const [n, s, sup, img, own] = await Promise.all([
+    const [n, s, sup, img, own, sup1] = await Promise.all([
       withRetry(() => collection.name()),
       withRetry(() => collection.symbol()),
       withRetry(() => collection.maxSupply()),
       withRetry(() => collection.getImage()),
       withRetry(() => collection.owner()),
+      withRetry(() => collection.previewBurnPayout()),
     ])
     setListingName(n)
     setSymbol(s)
@@ -176,6 +185,7 @@ const TradeListing: NextPage = () => {
     setIsOwner(address?.toLowerCase() === own.toLowerCase())
     const balWei = await withRetry(() => provider.getBalance(listingAddress as string))
     setContractBal(weiToEth(balWei))
+    setSellPrice(weiToEth(sup1))
   }, [collection])
 
   const fetchUserBalance = React.useCallback(async () => {
@@ -236,7 +246,11 @@ const TradeListing: NextPage = () => {
     try {
       const c = new ethers.Contract(listingAddress, collection_abi, await signer)
       const curWei = BigInt(Math.round(saleState.price * 1e18))
-      const minWei = curWei - (curWei * BigInt(slippagePct)) / 100n
+     // const minWei = curWei - (curWei * BigInt(slippagePct)) / 100n
+
+      const payoutWei = await c.previewBurnPayout()
+      const minWei    = payoutWei - (payoutWei * BigInt(slippagePct)) / 100n
+
       const tx = await withRetry(() => c.burnLast(minWei))
       toaster.create({ title: "Tx sent", description: "Waiting…" })
       await withRetry(() => tx.wait())
@@ -316,8 +330,8 @@ const TradeListing: NextPage = () => {
           <VStack gap={3} textAlign="center">
             <Heading fontSize={["lg", "2xl"]} className={pixelFont.className}>Mint auction finished</Heading>
             <Text fontSize="sm" className={pixel3Font.className}>Continue trading on secondary market:</Text>
-            <NextLink href={`https://magiceden.io/item-details/${listingAddress}`} passHref legacyBehavior>
-              <Button size="sm" bg="#c11c84" _hover={{ bg: "#e055ab" }} className={pixel3Font.className}>View on Magic Eden</Button>
+            <NextLink href={`https://magiceden.io/item-details/${listingAddress}`} passHref>
+              <Text fontSize="sm" textDecoration="underline" color="white" className={pixel3Font.className}>View on Magic Eden</Text>
             </NextLink>
           </VStack>
         </Box>
@@ -462,6 +476,7 @@ const TradeListing: NextPage = () => {
                   color="green.600"
                   border="1px solid #c11c84"
                   className={pixel3Font.className}
+                  disabled={saleState?.closed}
                 >
                   buy
                 </Button>
@@ -472,12 +487,16 @@ const TradeListing: NextPage = () => {
                   onClick={burn}
                   color="red.600"
                   className={pixel3Font.className}
+                  disabled={saleState?.closed}
                 >
                   sell
                 </Button>
               </HStack>
               <Text fontSize="2xs" color="gray.400" className={pixel3Font.className}>
-                Market price: ~{saleState?.price.toFixed(4)} MON
+                buy price: ~{saleState?.price.toFixed(4)} MON
+              </Text>
+              <Text fontSize="2xs" color="gray.400" className={pixel3Font.className}>
+                sell price: ~{sellPrice?.toFixed(4)} MON
               </Text>
 
             </VStack>
