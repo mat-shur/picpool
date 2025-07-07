@@ -100,14 +100,17 @@ contract PumpFunNFTCollection is ERC721, Ownable, ReentrancyGuard, ERC2981 {
             for (uint256 i; i < _initialMintCount;) {
                 uint256 tokenId = _mintCore(_collectionOwner);
                 price = Math.mulDiv(price, stepFactor, 1e18, Math.Rounding.Up);
-                listing.currentPrice = price;
+
                 _pushSnap(Snap({
                     t: uint40(block.timestamp),
                     p: uint152(listing.currentPrice),
                     s: uint24(currentSupply()),
-                    trader: msg.sender,
+                    trader: _collectionOwner,
                     isBuy: true        
                 }));
+
+                listing.currentPrice = price;
+                
                 emit Minted(_collectionOwner, block.timestamp, tokenId);
                 unchecked { ++i; }
             }
@@ -167,7 +170,6 @@ contract PumpFunNFTCollection is ERC721, Ownable, ReentrancyGuard, ERC2981 {
 
         uint256 tokenId = _mintCore(msg.sender);
 
-        listing.currentPrice = Math.mulDiv(price, stepFactor, 1e18, Math.Rounding.Up);
         _pushSnap(Snap({
             t: uint40(block.timestamp),
             p: uint152(listing.currentPrice),
@@ -176,6 +178,8 @@ contract PumpFunNFTCollection is ERC721, Ownable, ReentrancyGuard, ERC2981 {
             isBuy: true  
         }));
 
+        listing.currentPrice = Math.mulDiv(price, stepFactor, 1e18, Math.Rounding.Up);
+        
         emit Minted(msg.sender, block.timestamp, tokenId);
         if (msg.value > price) payable(msg.sender).sendValue(msg.value - price);
     }
@@ -190,6 +194,7 @@ contract PumpFunNFTCollection is ERC721, Ownable, ReentrancyGuard, ERC2981 {
         _burn(tokenId);
         listing.totalBurned++;
         listing.currentPrice = payout;
+
         _pushSnap(Snap({
             t: uint40(block.timestamp),
             p: uint152(listing.currentPrice),
@@ -270,5 +275,9 @@ contract PumpFunNFTCollection is ERC721, Ownable, ReentrancyGuard, ERC2981 {
 
     function supportsInterface(bytes4 iid) public view override(ERC721, ERC2981) returns (bool) {
         return super.supportsInterface(iid);
+    }
+
+    function previewBurnPayout() external view returns (uint256) {
+        return Math.mulDiv(listing.currentPrice, 1e18, stepFactor, Math.Rounding.Down);
     }
 }

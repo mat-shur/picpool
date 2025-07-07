@@ -31,7 +31,7 @@ contract PumpFunNFTFactory is Ownable {
         string  memory symbol_,
         string  memory imageBase64,
         uint256 initialMintCnt
-    ) external payable onlyOwner {
+    ) external payable {
         if (initialMintCnt > 10) revert("premint<=10");
         uint256 need = startPrice * initialMintCnt;
         if (msg.value < need) revert("need ether for premint");
